@@ -38,6 +38,21 @@ chflags nouchg "$HOME/Library/Application Support/Mozilla/NativeMessagingHosts/c
 
 Strongbox may then manage its official manifest normally, while the fork continues using `com.onkay.strongbox.json`. Restart Firefox after creating or changing either native messaging manifest.
 
+## Atlas security-question autofill (Onkay fork)
+
+The main AutoFill button can fill the security-question challenge on
+`atlasauth.b2clogin.com` from custom fields in the selected Strongbox entry.
+Name each custom field after the **full question text**. Store the answer as the
+field value and mark it protected in Strongbox.
+
+The visible “Security question 1/2” labels describe display order, which can differ
+from the input IDs. Neither numbered labels nor input IDs such as `kba3_response`
+are matched: an input can display a different question later. Question-text names
+must match the language displayed on the page. Only uniquely matched, visible, editable answers are
+filled. Missing or ambiguous matches are skipped, the login password is never
+used as a security answer, and answers are not filled automatically on page load.
+AutoFill never presses Continue or submits the challenge.
+
 # Localization - Help Wanted
 If you would like to see Strongbox translated into your language just get in touch (support@strongboxsafe.com) and we'll get you access to our localization platform. Localization and translation is managed through the parallel Babel project. This is managed under the MIT licence to avoid issues with the Apple's App Store and ownership:
 
