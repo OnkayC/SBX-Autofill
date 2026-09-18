@@ -133,3 +133,56 @@ for (const mapping of [null, {}, { answerSelector: '#a' }, { answerSelector: '',
     assert.equal(saved, false);
   });
 }
+
+test('adding a rule preserves existing rules, disabled state and priority', async () => {
+  const { AutofillRuleStore } = loadTypeScriptModule('../src/Content/Autofill/AutofillRuleStore.ts');
+  let saved = null;
+  const store = new AutofillRuleStore({ load: async () => saved, save: async value => { saved = value; } }, selector => selector.startsWith('#'));
+  await store.import(JSON.stringify({ version: 1, rules: [
+    { id: 'existing', enabled: false, origins: ['https://example.test'], selectors: {}, securityAnswers: [{ answerSelector: '#a', questionSelector: '#q' }] }
+  ] }));
+  const existing = JSON.parse(await store.export()).rules[0];
+  await store.add({ id: 'new-login', origins: ['https://example.test'], selectors: { username: ['#user'] } });
+  assert.deepEqual(JSON.parse(await store.export()).rules[0], existing);
+  assert.deepEqual(saved.rules.map(rule => rule.id), ['existing', 'new-login']);
+  assert.deepEqual((await store.load()).map(rule => rule.id), ['new-login']);
+  const before = await store.export();
+  await assert.rejects(store.add({ id: 'existing', origins: ['https://other.test'], selectors: {} }), /unique, stable id/);
+  await assert.rejects(store.add({ id: 'bad', origins: ['https://*.example.test'], selectors: {} }), /exact http or https origin/);
+  await assert.rejects(store.add({ id: 'bad-selector', origins: ['https://example.test'], selectors: { username: ['['] } }), /invalid username selector/);
+  assert.equal(await store.export(), before);
+});
+
+test('adding a rule enforces the stored rule limit without changing storage', async () => {
+  const { AutofillRuleStore } = loadTypeScriptModule('../src/Content/Autofill/AutofillRuleStore.ts');
+  const stored = { version: 1, rules: Array.from({ length: 500 }, (_, i) => ({ id: `rule-${i}`, origins: ['https://example.test'], selectors: {} })) };
+  let writes = 0;
+  const store = new AutofillRuleStore({ load: async () => stored, save: async () => { writes++; } }, () => true);
+  await assert.rejects(store.add({ id: 'extra', origins: ['https://example.test'], selectors: {} }), /more than 500/);
+  assert.equal(writes, 0);
+});
+
+test('editing preserves priority and other rules and rejects ID collisions', async () => {
+  const { AutofillRuleStore } = loadTypeScriptModule('../src/Content/Autofill/AutofillRuleStore.ts');
+  let saved;
+  const store = new AutofillRuleStore({ load: async () => saved, save: async value => { saved = value; } }, () => true);
+  const first = { id: 'first', enabled: false, origins: ['https://example.test'], selectors: { username: ['#user'] } };
+  await store.import(JSON.stringify({ version: 1, rules: [first, { ...first, id: 'second' }] }));
+  await store.update('first', { ...first, id: 'renamed', selectors: { username: ['#email'] } });
+  assert.deepEqual(saved.rules.map(r => r.id), ['renamed', 'second']);
+  assert.equal(saved.rules[0].enabled, false);
+  const before = await store.export();
+  await assert.rejects(store.update('renamed', { ...first, id: 'second' }), /unique/);
+  await assert.rejects(store.update('missing', first), /no longer exists/);
+  assert.equal(await store.export(), before);
+});
+
+test('rule form round-trips advanced fields and comma-containing selectors', () => {
+  const { createRuleDraft, ruleFromDraft } = loadTypeScriptModule('../src/Settings/RuleDraft.ts');
+  const original = { id: 'advanced', origins: ['https://example.test', 'https://other.test'], pathPrefixes: ['/login', '/SignIn'], selectors: { username: ['input:is(#user, #email)', '#username'], ignore: ['#search'] }, securityAnswers: [{ questionSelector: '#question', answerSelector: '#answer' }], enabled: false, disableHeuristics: true };
+  const draft = createRuleDraft(original);
+  assert.deepEqual(ruleFromDraft(draft), original);
+  draft.securityAnswers[0].answerSelector = '#new-answer';
+  assert.equal(original.securityAnswers[0].answerSelector, '#answer');
+  assert.deepEqual(ruleFromDraft(createRuleDraft()).origins, []);
+});

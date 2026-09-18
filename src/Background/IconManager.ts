@@ -24,7 +24,7 @@ export class IconManager {
           },
         });
 
-        await action.setTitle({ title: 'Strongbox Onkay: Not Running' });
+        await action.setTitle({ title: 'SBX Autofill: Not Running' });
       } else if (state == IconState.allDatabasesLocked) {
         await action.setIcon({
           path: {
@@ -33,7 +33,7 @@ export class IconManager {
           },
         });
 
-        await action.setTitle({ title: 'Strongbox Onkay: Locked' });
+        await action.setTitle({ title: 'SBX Autofill: Locked' });
       } else {
         await action.setIcon({
           path: {
@@ -41,12 +41,13 @@ export class IconManager {
             38: '/assets/icons/app-icon-blue-38.png',
           },
         });
-        await action.setTitle({ title: 'Strongbox Onkay' });
+        await action.setTitle({ title: 'SBX Autofill' });
       }
 
       await action.setBadgeText({ text: badgeText });
       await action.setBadgeBackgroundColor({ color: badgeColor });
     } catch (error) {
+      // Toolbar updates are best-effort when the browser action is unavailable.
     }
   }
 }

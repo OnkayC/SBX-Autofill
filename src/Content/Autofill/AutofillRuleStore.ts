@@ -54,6 +54,21 @@ export class AutofillRuleStore {
     return JSON.stringify(document, null, 2);
   }
 
+  async add(rule: unknown): Promise<void> {
+    const document = this.validateDocument(await this.storage.load(), false);
+    const updated = this.validateDocument({ ...document, rules: [...document.rules, rule] }, true);
+    await this.storage.save(updated);
+  }
+
+  async update(id: string, rule: unknown): Promise<void> {
+    const document = this.validateDocument(await this.storage.load(), false);
+    const index = document.rules.findIndex(candidate => candidate.id === id);
+    if (index === -1) throw new Error('This rule no longer exists. Reload your configured rules.');
+    const rules: unknown[] = [...document.rules];
+    rules[index] = rule;
+    await this.storage.save(this.validateDocument({ ...document, rules }, true));
+  }
+
   async remove(id: string): Promise<void> {
     const document = this.validateDocument(await this.storage.load(), false);
     document.rules = document.rules.filter(rule => rule.id !== id);

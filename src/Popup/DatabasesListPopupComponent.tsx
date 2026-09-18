@@ -1,84 +1,20 @@
-import { Box, List, ListSubheader, Typography } from '@mui/material';
-import React, { useState } from 'react';
-import { NativeAppApi } from '../Messaging/NativeAppApi';
+import { Box, List, Typography } from '@mui/material';
+import React from 'react';
 import { DatabaseSummary } from '../Messaging/Protocol/DatabaseSummary';
 import DatabaseListItem from './DatabaseListItem';
 import { useTranslation } from 'react-i18next';
 
-interface DatabasesListPopupComponentProps {
-  showToast: (message: string) => void;
-}
-
-function DatabasesListPopupComponent({ showToast }: DatabasesListPopupComponentProps) {
-  const [databases, setDatabases] = useState<DatabaseSummary[]>();
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<boolean>();
+export default function DatabasesListPopupComponent({ databases }: { databases: DatabaseSummary[] }) {
   const [t] = useTranslation('global');
-
-  React.useEffect(() => {
-    async function getCurrentStatus() {
-
-      const status = await NativeAppApi.getInstance().getStatus();
-      if (status != null) {
-        setDatabases(status.databases);
-      } else {
-        setError(true);
-      }
-
-      setLoading(false);
-    }
-
-    getCurrentStatus().catch(() => {
-    });
-  }, []);
-
-  return (
-    <List
-      subheader={
-        <ListSubheader component="div" id="nested-list-subheader" sx={{ textAlign: 'center' }}>
-          {t('databases-list-popup-component.title')}
-        </ListSubheader>
-      }
-      sx={{ minWidth: '400px', minHeight: '100px', mt: 0, pt: 0 }}
-    >
-      {!loading && databases != undefined ? (
-        databases.length ? (
-          databases.map(database => <DatabaseListItem database={database} showToast={showToast} key={database.uuid} />)
-        ) : (
-          <Box>
-            <Box display="block">
-              <Typography
-                variant="body1"
-                align="center"
-                
-                sx={{
-                  textOverflow: 'ellipsis',
-                  p: 0,
-                }}
-              >
-                {t('databases-list-popup-component.no-databases')}
-              </Typography>
-            </Box>
-            <Box>
-              <Typography
-                variant="body2"
-                align="center"
-                color="text.secondary"
-                sx={{
-                  textOverflow: 'ellipsis',
-                  p: '5px',
-                }}
-              >
-                {t('databases-list-popup-component.no-databases-message')}
-              </Typography>
-            </Box>
-          </Box>
-        )
-      ) : (
-        t('general.loading')
-      )}
-    </List>
-  );
+  return <Box sx={{ width: 400 }}>
+    {databases.length ? <List disablePadding sx={{ px: 1.5 }}>
+      {databases.map(database => <DatabaseListItem database={database} key={database.uuid} />)}
+    </List> : <Box sx={{ p: 3 }}>
+      <Typography sx={{ fontWeight: 500 }}>{t('databases-list-popup-component.no-databases')}</Typography>
+      <Typography color="text.secondary" sx={{ mt: 1, fontSize: '0.875rem' }}>{t('databases-list-popup-component.no-databases-message')}</Typography>
+    </Box>}
+    <Typography component="footer" color="text.secondary" sx={{ px: 2, py: 2.5, fontSize: '0.8125rem' }}>
+      {t('popup-design.database-help', { defaultValue: 'Manage database autofill in Strongbox.' })}
+    </Typography>
+  </Box>;
 }
-
-export default DatabasesListPopupComponent;

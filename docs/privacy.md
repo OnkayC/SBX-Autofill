@@ -30,4 +30,4 @@ Use of information received through Google APIs adheres to the Chrome Web Store 
 
 ## Contact
 
-Contact the developer through [the fork's GitHub issues](https://github.com/OnkayC/browser-autofill/issues). Issues are public: do not include passwords, security answers, database files, or other private information in support requests.
+Contact the developer through [the fork's GitHub issues](https://github.com/OnkayC/SBX-Autofill/issues). Issues are public: do not include passwords, security answers, database files, or other private information in support requests.

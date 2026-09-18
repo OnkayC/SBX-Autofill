@@ -1,13 +1,37 @@
 # SBX Autofill
 
-SBX Autofill is an independent fork of the open-source Strongbox Browser AutoFill
-extension, maintained by Onkay. It works with Strongbox for macOS and is not
-affiliated with or endorsed by Phoebe Code Limited or Strongbox.
+SBX Autofill connects Chrome or Firefox to **Strongbox for macOS** to find and
+fill website credentials. This repository is Onkay's independently maintained
+fork of [Strongbox Browser AutoFill](https://github.com/strongbox-password-safe/browser-autofill).
 
-The original Strongbox extension's official distributions are:
+**Not affiliated with or endorsed by Phoebe Code Limited or Strongbox.**
 
-- Chrome/Chromium: https://chrome.google.com/webstore/detail/strongbox-autofill/mnilpkfepdibngheginihjpknnopchbn
-- Firefox: https://addons.mozilla.org/firefox/addon/strongbox-autofill/
+## Features
+
+- Find matching logins, fill usernames and passwords, and copy individual fields or one-time codes.
+- View Strongbox databases and their lock and autofill status from the popup.
+- Configure site-specific field selectors and security-question mappings.
+- Manage saved rules separately from new-rule setup, with JSON backup and import.
+- Use a full-page settings screen and a popup that support system light/dark appearance.
+
+## Requirements and installation
+
+SBX Autofill requires macOS, the Strongbox app, and Strongbox's browser autofill
+integration enabled. Strongbox's licensing and database autofill settings still
+apply; this fork does not replace the app or unlock paid features.
+
+Installing the extension is only one part of setup: **register the native connector
+for the browser you use**, following the sections below. The connector points to
+Strongbox's existing helper and lets the extension communicate with the app locally.
+
+| Browser | Extension installation | Native connector setup |
+| --- | --- | --- |
+| Chrome / Chrome Dev | Load a local build, or use the Private store listing when approved and your Google account is an authorized tester. | [Chrome setup](#onkay-chrome-fork-macos) |
+| Firefox | Install a Mozilla-signed fork `.xpi`, or load a local build temporarily for development. | [Firefox setup](#onkay-firefox-fork-native-messaging) |
+
+The Firefox and Chrome builds have separate extension identities and settings.
+Disable the official extension before using the fork to avoid duplicate autofill.
+Export rules and record preferences before switching; they do not migrate automatically.
 
 ## Onkay Firefox fork: native messaging
 
@@ -26,7 +50,7 @@ with this content:
   "allowed_extensions": [
     "{1af7308a-5616-4c0d-a14f-14c69f4e0bcd}"
   ],
-  "description": "Strongbox Browser AutoFill Extension - Onkay Fork",
+  "description": "SBX Autofill native connector",
   "name": "com.onkay.strongbox",
   "path": "/Applications/Strongbox.app/Contents/MacOS/afproxy",
   "type": "stdio"
@@ -45,11 +69,13 @@ Strongbox may then manage its official manifest normally, while the fork continu
 
 ## Onkay Chrome fork (macOS)
 
-Build the Chrome Manifest V3 extension from the repository root:
+After installing dependencies as described in [Development](#development), build the Chrome Manifest V3 extension from the repository root:
 
 ```sh
 mise exec -- npm run build:chrome
 ```
+
+For Google Chrome Dev, use `~/Library/Application Support/Google/Chrome Dev/NativeMessagingHosts/com.onkay.strongbox.json` instead of the regular Chrome path below. Register each browser channel you use separately.
 
 The Chrome build uses the same `com.onkay.strongbox` native host as the Firefox
 fork, but Chrome needs its own registration. Create this file:
@@ -63,7 +89,7 @@ fork, but Chrome needs its own registration. Create this file:
   "allowed_origins": [
     "chrome-extension://mmkljcggfeafndhodagadahcijhhmamj/"
   ],
-  "description": "Strongbox Browser AutoFill Extension - Onkay Fork",
+  "description": "SBX Autofill native connector",
   "name": "com.onkay.strongbox",
   "path": "/Applications/Strongbox.app/Contents/MacOS/afproxy",
   "type": "stdio"
@@ -98,13 +124,20 @@ for store-managed updates. The native-host setup above is still required on
 each Mac. See the [privacy policy](docs/privacy.md) for data handling and Chrome
 Sync details.
 
-## Configurable site rules (Onkay fork)
+## Settings and site rules
 
 Open **Settings** from the extension popup to launch the standalone settings tab,
-then select **Rules** to edit, import/export, enable,
-or delete site rules. **Load file** opens a JSON document for editing; **Import**
-validates and saves it. Import replaces the whole rule list, so export and merge
-existing rules first if you want to retain them. Changes apply to open pages.
+then select **Site rules**. **Configured rules** lists saved rules with controls to
+edit, enable, or delete them. **Set up new rule** provides fields for site origins,
+path prefixes, and field selectors, with a live JSON preview. Advanced fields
+include security-question mappings. Adding a rule preserves existing rules;
+editing a rule preserves its priority in the list.
+Under **Configured rules → Edit / import all rules**, **Load file** opens a JSON
+document for editing. **Replace all rules** asks for confirmation before replacing
+the list; **Download backup** exports the saved configuration.
+Settings use the full browser page and follow the system's light/dark appearance.
+Popup and inline-menu appearance can be set separately. Preferences save
+automatically; rules save with **Add rule** or **Save changes**.
 Rules are stored locally in the browser, and none are enabled by default.
 
 Each rule specifies exact `origins`, optional case-sensitive `pathPrefixes`, and
@@ -132,70 +165,76 @@ display labels do not identify an answer because questions can change while IDs
 remain fixed. Matching ignores letter case, repeated whitespace, and trailing
 question marks or asterisks. Missing or ambiguous matches are skipped.
 
-# Localization - Help Wanted
-If you would like to see Strongbox translated into your language just get in touch (support@strongboxsafe.com) and we'll get you access to our localization platform. Localization and translation is managed through the parallel Babel project. This is managed under the MIT licence to avoid issues with the Apple's App Store and ownership:
+## Permissions and privacy
 
-https://github.com/strongbox-password-safe/babel
+The current Chrome build requests access to HTTP and HTTPS websites so it can
+detect forms and show the inline menu without requiring a toolbar click first.
+Content scripts also run in matching frames. Narrowing browser site access limits
+where those features work; configurable site rules are field-matching instructions,
+not browser permission grants.
 
-Big thank you to all the localization contributors
+Native messaging connects to Strongbox on the same Mac. The publisher does not
+operate a server that receives your credentials or browsing history, and the
+extension has no analytics or advertising service. General preferences use browser
+sync storage; site rules use local extension storage. See the
+[privacy policy](docs/privacy.md) for the data processed and Chrome Sync details.
 
-- Chinese - GY & Attis & Anonymous
-- Czech - S474N
-- Dutch - Wishes to remain anonymous
-- French - Charles-Ivan Chesneau
-- German - @Slummi
-- Greek - John Spiropoulos
-- Italian - Marco Ermini
-- Japanese - Anonymous
-- Norwegian - Ole Aldric
-- Polish - Łukasz Oryński
-- Portuguese (PT-BR) - Wolfgang Marcos
-- Russian - Wishes to remain anonymous
-- Spanish - Wishes to remain anonymous
-- Swedish - Jari Häkkinen
-- Turkish - evreka
-- Ukrainian - Artem Polivanchuk
+## Troubleshooting
 
-# License Notes (AGPL)
-This code provided here is licensed under the GNU AGPL by default, except for localization which is managed under the MIT Licence in the Babel sub project. Copyright/Ownership is held by Mark McGuill.
+If the popup reports that Strongbox is unavailable:
 
-# Supporting Development
-There are several ways you can help support continuous development. 
+1. Open Strongbox and enable its Chrome / Firefox autofill integration.
+2. Check that browser autofill is available under your Strongbox license and enabled for the database.
+3. Check the native-host file location for your browser, its extension ID allowlist, and the `afproxy` executable path.
+4. Restart the browser after changing the native-host registration, then check **Databases** in the popup.
 
-### App Store Purchase
-Obviously if you purchase a subscription or lifetime licence Apple's App Stores that's really helpful. 
+A database marked **Autofill disabled** needs its autofill setting enabled in
+Strongbox. For an unpacked Chrome build, reload the extension after rebuilding
+and refresh the website so it loads the updated content scripts.
 
-### Leave a Review
-If you like the app, you can always help out by leaving a *5 star review* in the App Store(s) (Apple, Mozilla or Google's stores). This is very helpful, and helps get the word out about Strongbox. If you can, please leave a positive comment too. You can review the App on Apple here:
+## Development
 
-Apple App Store: https://apps.apple.com/app/strongbox-password-safe/id897283731
-Chrome/Chromium: https://chrome.google.com/webstore/detail/strongbox-autofill/mnilpkfepdibngheginihjpknnopchbn
-Firefox: https://addons.mozilla.org/firefox/addon/strongbox-autofill/
+Run commands from the repository root with Node.js and npm available. The examples
+use `mise exec --` to select the local toolchain; if you manage Node another way,
+run the equivalent `npm` commands directly.
 
-# Help / Tech Support
-If you're having trouble, please checkout the following sources:
+```sh
+mise exec -- npm ci
+mise exec -- npm test
+mise exec -- npm run build:chrome
+mise exec -- npm run build:firefox
+```
 
-- [Online Support](https://strongboxsafe.com/support/) 
-- [Twitter @StrongboxSafe](https://twitter.com/StrongboxSafe "@StrongboxSafe") 
-- [Reddit r/strongbox](https://www.reddit.com/r/strongbox/ "r/strongbox")
+Production output is written to `dist/chrome` and `dist/firefox`. Chrome uses
+Manifest V3; Firefox has a separate manifest and build. Do not install a Firefox
+`.xpi` in Chrome.
 
-Another important step is to restart your device, it's surprising how often this can fix issues.
+For a watch build, use `npm run dev:chrome` or `npm run dev:firefox`. In Firefox,
+open `about:debugging#/runtime/this-firefox`, choose **Load Temporary Add-on**, and
+select `dist/firefox/manifest.json`. Temporary add-ons are removed when Firefox
+restarts; persistent installation requires a Mozilla-signed package.
 
-# Build Issues
-The code is provided here in the spirit transparency, security and openness. Anyone can view the code and verify that everything is above board, the algorithms are correct and there are no backdoors or other malicious features present. Please do not file issues about build trouble or problems, they will be closed as "won't fix". What is here is all of the functional code used in building Strongbox Browser AutoFill, other non functional files (e.g. artwork, images, auxilliary and build configs) are not present. Translation strings files are managed in the separate Babel repository. 
+Use synthetic credentials when testing autofill. Never include real passwords,
+security answers, database files, or signing credentials in tests or commits.
 
-# Open Source not Open Contribution
-At the moment, we are not accepting pull requests and do not want to manage contributions from others. The code here is under the AGPL which Apple will not allow in the App Store. The code is provided here in the spirit of transparency, security and openness.
+## Support
 
-# Acknowledgements
-Kudos to Rony Shapiro, Bruce Schneier and all the Password Safe team for their amazing work and the original Password Safe format and application.
+Report bugs and feature requests in [this fork's issue tracker](https://github.com/OnkayC/SBX-Autofill/issues).
+Include the browser/version, extension version, steps to reproduce, and whether
+the problem concerns the native connection, popup, or a website's form. Redact
+private information from logs and screenshots; issues are public.
 
-The official KeePass site is here:
+This fork's changes are maintained here. Upstream Strongbox support is not
+responsible for diagnosing fork-specific behavior.
 
-https://keepass.info/
+## License and attribution
 
-Credit to Dominik Reichl and all the KeePass team for their incredible technical skill, for coming up with a great format, and their seminal KeePass app. 
+The extension is licensed under **AGPL-3.0-or-later**; see [LICENSE.md](LICENSE.md).
+Original Strongbox Browser AutoFill code is by Mark McGuill and upstream
+contributors. This fork preserves their copyright and license notices.
 
-Hats off to the KeePassXC team for their fantastic cross platform apps. 
-
-https://keepassxc.org/
+Translations originate from the separately maintained
+[Strongbox Babel project](https://github.com/strongbox-password-safe/babel), which
+uses the MIT license. Thanks to the upstream code and localization contributors,
+and to the Password Safe, KeePass, and KeePassXC projects on which the wider
+password-manager ecosystem builds.

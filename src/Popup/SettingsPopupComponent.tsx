@@ -1,58 +1,37 @@
-import { Box, Tab, Tabs, Typography, useMediaQuery, useTheme } from '@mui/material';
-import React from 'react';
+import { Button } from '@mui/material';
+import browser from 'webextension-polyfill';
+import SettingsOutlined from '@mui/icons-material/SettingsOutlined';
+import PasswordOutlined from '@mui/icons-material/PasswordOutlined';
+import NotesOutlined from '@mui/icons-material/NotesOutlined';
+import PaletteOutlined from '@mui/icons-material/PaletteOutlined';
+import LanguageOutlined from '@mui/icons-material/LanguageOutlined';
+import InfoOutlined from '@mui/icons-material/InfoOutlined';
+import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import SettingsPopupStyleTabPanel from './SettingsPopupStyleTabPanel';
-import SettingsPopupGeneralTabPanel from './SettingsPopupGeneralTabPanel';
-import SettingsPopupFillTabPanel from './SettingsPopupFillTabPanel';
-import SettingsPopupInlineMenuTabPanel from './SettingsPopupInlineMenuTabPanel';
 import SettingsPopupRulesTabPanel from './SettingsPopupRulesTabPanel';
+import SettingsPreferences from '../Settings/SettingsPreferences';
 
-function SettingsPopupComponent() {
+export default function SettingsPopupComponent() {
   const [t] = useTranslation('global');
-  return (
-    <Box component="main">
-      <Typography variant="h4" component="h1">{t('settings-popup-component.title')}</Typography>
-      <Typography color="text.secondary" sx={{ mt: 1, mb: 4 }}>
-        SBX Autofill · {t('general.version')} {process.env.VERSION}
-      </Typography>
-      <VerticalTabs />
-    </Box>
-  );
+  const [section, setSection] = useState(0);
+  const keys = ['general', 'autofill', 'inline', 'appearance', 'rules', 'about'];
+  const icons = [<SettingsOutlined />, <PasswordOutlined />, <NotesOutlined />, <PaletteOutlined />, <LanguageOutlined />, <InfoOutlined />];
+  return <div className="settings-shell">
+    <aside className="settings-sidebar">
+      <div className="settings-brand"><img src={browser.runtime.getURL('assets/icons/sbx-autofill.svg')} alt="" width={32} height={32} /><span>SBX Autofill</span></div>
+      <nav className="settings-nav" aria-label={t('settings-page.navigation')}>
+        {keys.map((key, i) => <Button key={key} startIcon={icons[i]} aria-current={section === i ? 'page' : undefined} onClick={() => setSection(i)}>{t(`settings-page.${key}`)}</Button>)}
+      </nav>
+      <footer>{t('general.version')} {process.env.VERSION}</footer>
+    </aside>
+    <main className="settings-main">
+      <header><p>{t('settings-popup-component.title')}</p><h1>{t(`settings-page.${keys[section]}`)}</h1><p>{t(`settings-page.${keys[section]}-description`)}</p></header>
+      {section === 5 ? <section aria-label={t('settings-page.about')} style={{ maxWidth: '65ch' }}>
+        <h2>SBX Autofill</h2>
+        <div className="settings-section"><p>{t('general.version')} {process.env.VERSION}</p></div>
+        <div className="settings-section"><p>{t('settings-page.disclaimer')}</p></div>
+        <p>{t('settings-page.system-theme')}</p>
+      </section> : section === 4 ? <SettingsPopupRulesTabPanel value={4} index={4} /> : <SettingsPreferences section={section} />}
+    </main>
+  </div>;
 }
-
-function a11yProps(index: number) {
-  return {
-    id: `vertical-tab-${index}`,
-    'aria-controls': `vertical-tabpanel-${index}`
-  };
-}
-
-function VerticalTabs() {
-  const [t] = useTranslation('global');
-  const [value, setValue] = React.useState(0);
-  const compact = useMediaQuery(useTheme().breakpoints.down('sm'));
-
-  const handleChange = (_: React.SyntheticEvent, newValue: number) => {
-    setValue(newValue);
-  };
-
-  return (
-    <Box sx={{ bgcolor: 'background.paper', display: 'flex', flexDirection: compact ? 'column' : 'row', gap: 3, '& > [role=tabpanel]': { flex: 1, minWidth: 0 } }}>
-      <Tabs orientation={compact ? 'horizontal' : 'vertical'} variant="scrollable" value={value} onChange={handleChange} aria-label="Settings tabs" sx={{ borderRight: compact ? 0 : 1, borderBottom: compact ? 1 : 0, borderColor: 'divider', minWidth: compact ? 0 : 190 }}>
-        <Tab label={t('settings-popup-component.title-tab1')} {...a11yProps(0)} />
-        <Tab label={t('settings-popup-component.title-tab2')} {...a11yProps(1)} />
-        <Tab label={t('settings-popup-component.title-tab3')} {...a11yProps(2)} />
-        <Tab label={t('settings-popup-component.title-tab4')} {...a11yProps(3)} />
-        <Tab label={t('settings-popup-component.title-tab5')} {...a11yProps(4)} />
-      </Tabs>
-
-      <SettingsPopupGeneralTabPanel value={value} index={0} />
-      <SettingsPopupFillTabPanel value={value} index={1} />
-      <SettingsPopupInlineMenuTabPanel value={value} index={2} />
-      <SettingsPopupStyleTabPanel value={value} index={3} />
-      <SettingsPopupRulesTabPanel value={value} index={4} />
-    </Box>
-  );
-}
-
-export default SettingsPopupComponent;

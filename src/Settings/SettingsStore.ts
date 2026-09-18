@@ -88,6 +88,6 @@ export class SettingsStore {
     const newSettings: { [key: string]: any } = {};
     newSettings[settingsKey] = this.serialize(settings);
 
-    browser.storage.sync.set(newSettings);
+    return browser.storage.sync.set(newSettings);
   }
 }

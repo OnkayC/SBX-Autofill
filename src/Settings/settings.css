@@ -1,0 +1,48 @@
+:root { color-scheme: light dark; --settings-bg: #ffffff; --settings-side: #f3f6fa; --settings-text: #122139; --settings-muted: #647795; --settings-line: #dce3ed; --settings-tint: #eef5ff; --settings-code: #f5f8fc; }
+@media (prefers-color-scheme: dark) { :root { --settings-bg: #111827; --settings-side: #182131; --settings-text: #e5eaf2; --settings-muted: #a6b3c7; --settings-line: #334155; --settings-tint: #1b3049; --settings-code: #182131; } }
+body { margin: 0; background: var(--settings-bg); color: var(--settings-text); }
+.settings-shell { display: grid; grid-template-columns: 220px minmax(0,1fr); min-height: 100vh; }
+.settings-sidebar { background: var(--settings-side); padding: 24px 12px; display: flex; flex-direction: column; position: sticky; top: 0; height: 100vh; box-sizing: border-box; }
+.settings-brand { display: flex; align-items: center; gap: 12px; padding: 0 12px 28px; font-size: 19px; font-weight: 600; }
+.settings-brand svg { color: #409dff; }
+.settings-nav { display: flex; flex-direction: column; gap: 6px; }
+.settings-nav .MuiButton-root { justify-content: flex-start; gap: 12px; padding: 13px 16px; color: var(--settings-muted); font-size: 14px; text-transform: none; border-radius: 6px; }
+.settings-nav .MuiButton-root[aria-current=page] { color: #1684ef; background: var(--settings-tint); box-shadow: inset 3px 0 #1684ef; }
+.settings-main { padding: 32px 36px 48px; min-width: 0; }
+.settings-main h1 { font-size: 34px; letter-spacing: -.8px; margin: 6px 0 6px; font-weight: 600; }
+.settings-main h2 { font-size: 20px; margin: 0 0 5px; font-weight: 600; }
+.settings-main h3 { font-size: 16px; margin: 0 0 10px; font-weight: 600; }
+.settings-main p { color: var(--settings-muted); line-height: 1.5; margin: 0; }
+.settings-main header { margin-bottom: 26px; }
+.settings-main .MuiTabs-root { border-bottom: 1px solid var(--settings-line); margin-bottom: 30px; }
+.settings-main .MuiTab-root { text-transform: none; font-size: 14px; padding: 14px 8px; margin-right: 24px; }
+.settings-columns { display: grid; grid-template-columns: minmax(0,1.4fr) minmax(280px,1fr); gap: 30px; }
+.settings-help { border-left: 1px solid var(--settings-line); padding-left: 24px; min-width: 0; }
+.settings-section { padding-bottom: 22px; margin-bottom: 20px; border-bottom: 1px solid var(--settings-line); }
+.settings-section > p { margin-bottom: 24px; font-size: 14px; }
+.settings-field { display: grid; grid-template-columns: 150px minmax(0,1fr); gap: 16px; margin-top: 22px; align-items: start; }
+.settings-field > label { font-size: 14px; padding-top: 10px; }
+.settings-field small { display: block; color: var(--settings-muted); font-size: 12px; line-height: 1.45; margin-top: 6px; }
+.settings-help section { margin-top: 20px; padding-bottom: 20px; border-bottom: 1px solid var(--settings-line); }
+.settings-help p { font-size: 14px; }
+.settings-scope { padding: 18px; background: var(--settings-tint); border-radius: 6px; }
+.settings-code { background: var(--settings-code); padding: 16px; border: 1px solid var(--settings-line); border-radius: 6px; white-space: pre-wrap; overflow-wrap: anywhere; font: 13px/1.65 ui-monospace, SFMono-Regular, monospace; margin: 12px 0; }
+.settings-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 26px; }
+.settings-row { display: flex; align-items: center; justify-content: space-between; gap: 24px; padding: 22px 0; border-bottom: 1px solid var(--settings-line); }
+.settings-row p { font-size: 14px; margin-top: 5px; max-width: 65ch; }
+.settings-row .MuiFormControl-root { min-width: 190px; }
+.settings-rules-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.settings-rules-table th { text-align: left; color: var(--settings-muted); font-weight: 500; }
+.settings-rules-table td, .settings-rules-table th { padding: 18px 10px; border-bottom: 1px solid var(--settings-line); overflow-wrap: anywhere; }
+.settings-rules-table td:first-child { font-weight: 500; }
+.settings-rules-table td:last-child { text-align: right; white-space: nowrap; }
+.settings-main .MuiAccordion-root { background: transparent; box-shadow: none; }
+.settings-main .MuiAccordionSummary-root { padding-left: 0; }
+.settings-main .MuiAccordionDetails-root { padding: 8px 0 20px; }
+.settings-main .MuiAlert-root { margin-bottom: 16px; }
+@media (min-width: 1700px) { .settings-main { padding: 44px 56px; } .settings-columns { grid-template-columns: minmax(0,1.6fr) minmax(320px,1fr); gap: 48px; } }
+@media (max-width: 1050px) { .settings-shell { grid-template-columns: 190px minmax(0,1fr); } .settings-main { padding: 26px 24px; } .settings-columns { grid-template-columns: 1fr; } .settings-help { border-left: 0; border-top: 1px solid var(--settings-line); padding: 24px 0 0; } }
+@media (max-width: 650px) { .settings-shell { display: block; } .settings-sidebar { height: auto; position: static; padding: 16px; } .settings-brand { padding: 0 0 12px; } .settings-nav { flex-direction: row; flex-wrap: wrap; } .settings-nav .MuiButton-root { flex-shrink: 0; padding: 10px; gap: 6px; } .settings-nav .MuiButton-startIcon { display: none; } .settings-main { padding: 24px 18px; } .settings-field { grid-template-columns: 1fr; gap: 6px; margin-top: 20px; } .settings-field > label { padding: 0; } .settings-row { flex-wrap: wrap; } .settings-rules-table th:nth-child(2), .settings-rules-table td:nth-child(2) { display: none; } }
+
+.settings-sidebar footer { margin-top: auto; padding: 28px 12px 0; color: var(--settings-muted); font-size: 12px; }
+@media (max-width: 650px) { .settings-sidebar footer { padding: 12px 0 0; } }
