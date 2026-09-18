@@ -22,10 +22,14 @@ import { GeneratePasswordV2Response } from '../Messaging/Protocol/GeneratePasswo
 import { GetPasswordAndStrengthRequest } from '../Messaging/Protocol/GetPasswordAndStrengthRequest';
 import { GetPasswordAndStrengthResponse } from '../Messaging/Protocol/GetPasswordAndStrengthResponse';
 import { GetNewEntryDefaultsResponseV2 } from '../Messaging/Protocol/GetNewEntryDefaultsResponseV2';
+import { IframeChannelRegistry } from './IframeChannelRegistry';
 
 export class BackgroundManager {
   private static instance: BackgroundManager;
   private nativeAppApi = NativeAppApi.getInstance();
+  private static readonly strongboxReadyRetryDelayMs = 250;
+  private static readonly strongboxReadyMaxAttempts = 20;
+
 
   private constructor() {
     
@@ -227,28 +231,34 @@ export class BackgroundManager {
     return response;
   }
 
-  private async unlockDatabase(uuid: string): Promise<UnlockResponse | null> {
+  private async waitForStrongboxReady(): Promise<boolean> {
+    for (let attempt = 0; attempt < BackgroundManager.strongboxReadyMaxAttempts; attempt++) {
+      if ((await this.getStatus()) !== null) {
+        return true;
+      }
 
-    const status = await this.getStatus();
-
-    if (status == null) {
-      const response = await this.launchStrongbox();
-
-      if (!response) {
-        return null;
-      } else {
-        
-        await new Promise(f => setTimeout(f, 500));
+      if (attempt < BackgroundManager.strongboxReadyMaxAttempts - 1) {
+        await new Promise(resolve => setTimeout(resolve, BackgroundManager.strongboxReadyRetryDelayMs));
       }
     }
 
+    return false;
+  }
 
-    const response2 = await NativeAppApi.getInstance().unlockDatabase(uuid);
+  private async unlockDatabase(uuid: string): Promise<UnlockResponse | null> {
+    const status = await this.getStatus();
 
+    if (status === null) {
+      if (!(await this.launchStrongbox())) {
+        return null;
+      }
 
-    
+      if (!(await this.waitForStrongboxReady())) {
+        return null;
+      }
+    }
 
-    return response2;
+    return await this.nativeAppApi.unlockDatabase(uuid);
   }
 
   private async getNewEntryDefaults(details: GetNewEntryDefaultsRequest): Promise<GetNewEntryDefaultsResponse | null> {
@@ -359,6 +369,10 @@ export class BackgroundManager {
 
 
       return response;
+    } else if (message.type === 'register-iframe-channel') {
+      return IframeChannelRegistry.register(message.details?.token, sender);
+    } else if (message.type === 'claim-iframe-channel') {
+      return IframeChannelRegistry.claim(message.details?.token, sender);
     } else if (message.type === 'content-script-requests-url-launch') {
       const url = message.details;
       const response = await browser.tabs.create({ url: url });
@@ -550,7 +564,7 @@ export class BackgroundManager {
     await browser.tabs.sendMessage(tab.id, { restoreFocus: true });
   }
 
-  async openInlineMenu(): Promise<void> {
+  async openInlineMenu(force = false): Promise<void> {
     const settings = await SettingsStore.getSettings();
     const tab = await BackgroundManager.getCurrentTab();
 
@@ -558,7 +572,7 @@ export class BackgroundManager {
       return;
     }
 
-    if (!settings.showInlineIconAndPopupMenu) {
+    if (!force && !settings.showInlineIconAndPopupMenu) {
       return;
     }
 
