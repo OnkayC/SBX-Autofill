@@ -242,7 +242,7 @@ password-manager ecosystem builds.
 ## Automated release packages
 
 The **Build release packages** GitHub Actions workflow runs manually from the
-Actions tab, on `v*` tag pushes, and for pull requests affecting the build.
+Actions tab, on pushes to `main`, on `v*` tag pushes, and for pull requests affecting the build.
 It installs locked dependencies, runs tests, and builds both browsers using Node.js 24.
 Tag builds require `v<version>` to match the package, lockfile and both manifests.
 
@@ -251,8 +251,14 @@ ZIP**, the corresponding committed source archive, and SHA-256 checksums. Each
 browser ZIP includes its manifest at the root, license and source archive.
 Artifacts are retained for 30 days. The build job does not use signing secrets
 or submit to either store. The separate signing job runs only for version tags
-or an explicit manual signing request; no GitHub Release is created. Firefox still needs Mozilla
-signing before persistent installation in a standard Firefox profile.
+or an explicit manual signing request. Firefox needs Mozilla signing before
+persistent installation in a standard Firefox profile.
+
+For version-tag pushes, a release job waits for both build and signing to succeed,
+then publishes a GitHub Release containing the Chrome ZIP, signed Firefox XPI,
+source ZIP, and SHA-256 checksums. It uses the same run’s verified artifacts without
+rebuilding. Branch, pull-request, and manual runs do not publish GitHub Releases.
+Chrome still requires upload and approval through the Chrome Web Store.
 
 ### Firefox signing
 
