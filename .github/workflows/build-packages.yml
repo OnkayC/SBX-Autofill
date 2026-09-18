@@ -2,6 +2,15 @@ name: Build release packages
 
 on:
   workflow_dispatch:
+    inputs:
+      sign_firefox:
+        description: 'Submit Firefox to Mozilla for unlisted signing'
+        type: boolean
+        default: false
+      version:
+        description: 'Required for manual signing; must be an unused Mozilla version'
+        type: string
+        default: ''
   push:
     branches: [main]
     tags: ['v*']
@@ -45,3 +54,101 @@ jobs:
           path: dist/packages/*
           if-no-files-found: error
           retention-days: 30
+
+  sign:
+    needs: build
+    concurrency:
+      group: firefox-signing
+      cancel-in-progress: false
+    if: (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')) || (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.sign_firefox)
+    environment: firefox-release
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '24'
+          cache: npm
+      - name: Require a commit from main
+        run: |
+          git fetch origin main
+          git merge-base --is-ancestor HEAD origin/main
+      - name: Check requested release version
+        id: release
+        env:
+          RELEASE_VERSION: ${{ inputs.version }}
+        run: |
+          node - <<'JS'
+          const fs = require('node:fs');
+          const version = require('./package.json').version;
+          const requested = process.env.GITHUB_REF_TYPE === 'tag'
+            ? process.env.GITHUB_REF_NAME.slice(1) : process.env.RELEASE_VERSION;
+          if (!/^\d+\.\d+\.\d+(?:\.\d+)?$/.test(version) || requested !== version) {
+            throw new Error('Requested version must match package.json');
+          }
+          fs.appendFileSync(process.env.GITHUB_OUTPUT, `version=${version}\n`);
+          JS
+      - name: Download packages from the successful build
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: sbx-autofill-packages-${{ github.sha }}
+          path: dist/packages
+      - name: Verify and unpack the built Firefox package
+        env:
+          RELEASE_VERSION: ${{ steps.release.outputs.version }}
+        run: |
+          (cd dist/packages && sha256sum --check SHA256SUMS.txt)
+          mkdir -p dist/firefox
+          unzip -q "dist/packages/sbx-autofill-${RELEASE_VERSION}-firefox-unsigned.zip" -d dist/firefox
+          cmp dist/firefox/source.zip "dist/packages/sbx-autofill-${RELEASE_VERSION}-source.zip"
+          python3 - <<'PYCODE'
+          import json, pathlib
+          expected = json.loads(pathlib.Path('src/manifest.firefox.json').read_text())
+          actual = json.loads(pathlib.Path('dist/firefox/manifest.json').read_text())
+          if actual != expected:
+              raise SystemExit('Artifact manifest does not match the checked-out release')
+          PYCODE
+      - name: Install Mozilla release tool
+        run: npm install --global web-ext@10.6.0
+      - name: Validate Firefox extension
+        run: web-ext lint --source-dir dist/firefox
+      - name: Submit to Mozilla for unlisted signing
+        env:
+          WEB_EXT_API_KEY: ${{ secrets.AMO_JWT_ISSUER }}
+          WEB_EXT_API_SECRET: ${{ secrets.AMO_JWT_SECRET }}
+          RELEASE_VERSION: ${{ steps.release.outputs.version }}
+        run: |
+          test -n "$WEB_EXT_API_KEY" || { echo 'Missing AMO_JWT_ISSUER'; exit 1; }
+          test -n "$WEB_EXT_API_SECRET" || { echo 'Missing AMO_JWT_SECRET'; exit 1; }
+          web-ext sign --source-dir dist/firefox \
+            --artifacts-dir web-ext-artifacts \
+            --channel unlisted \
+            --upload-source-code "dist/packages/sbx-autofill-${RELEASE_VERSION}-source.zip" \
+            --approval-timeout 900000 --no-input
+      - name: Verify downloaded signed package
+        run: |
+          python3 - <<'PY'
+          import hashlib, json, pathlib, zipfile
+          expected = json.loads(pathlib.Path('src/manifest.firefox.json').read_text())
+          artifacts = list(pathlib.Path('web-ext-artifacts').glob('*.xpi'))
+          if len(artifacts) != 1:
+              raise SystemExit('Expected one signed XPI; approval may still be pending. Check AMO before retrying.')
+          package = artifacts[0]
+          with zipfile.ZipFile(package) as archive:
+              manifest = json.loads(archive.read('manifest.json'))
+              assert archive.testzip() is None, 'Invalid XPI archive'
+              assert manifest['version'] == expected['version'], 'Version mismatch'
+              assert manifest['browser_specific_settings']['gecko']['id'] == expected['browser_specific_settings']['gecko']['id'], 'Add-on ID mismatch'
+              assert 'META-INF/mozilla.rsa' in archive.namelist(), 'Mozilla signature missing'
+          package.with_suffix('.xpi.sha256').write_text(hashlib.sha256(package.read_bytes()).hexdigest() + '  ' + package.name + '\n')
+          PY
+      - name: Upload signed Firefox package
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: firefox-signed-${{ steps.release.outputs.version }}-${{ github.run_id }}
+          path: web-ext-artifacts/*
+          if-no-files-found: error

@@ -249,20 +249,23 @@ Tag builds require `v<version>` to match the package, lockfile and both manifest
 Download the workflow artifact to get a Chrome upload ZIP, an **unsigned Firefox
 ZIP**, the corresponding committed source archive, and SHA-256 checksums. Each
 browser ZIP includes its manifest at the root, license and source archive.
-Artifacts are retained for 30 days. The workflow does not create a GitHub Release,
-submit to either store, or use signing secrets. Firefox still needs Mozilla
+Artifacts are retained for 30 days. The build job does not use signing secrets
+or submit to either store. The separate signing job runs only for version tags
+or an explicit manual signing request; no GitHub Release is created. Firefox still needs Mozilla
 signing before persistent installation in a standard Firefox profile.
 
 ### Firefox signing
 
-Push a `v<version>` tag on a commit from `main` to run **Sign Firefox release**
-automatically. The tag must match the package, lockfile and browser manifests.
-You can also run it manually on `main`, supplying the committed version. Use a **new Mozilla
+Push a `v<version>` tag on a commit from `main` to run the signing job in **Build release packages**
+automatically after its build job succeeds. The tag must match the package, lockfile and browser manifests.
+You can also run **Build release packages** manually on `main`, enable
+`sign_firefox`, and supply the committed version. Use a **new Mozilla
 version**: deleting Git tags does not free previously submitted AMO versions.
 
 The job uses the `firefox-release` GitHub environment, restricted to `main` and `v*` tags, with
-`AMO_JWT_ISSUER` and `AMO_JWT_SECRET` environment secrets. It builds and tests the
-committed source, validates Firefox, submits through `web-ext sign --channel
+`AMO_JWT_ISSUER` and `AMO_JWT_SECRET` environment secrets. The signing job uses `needs: build` and downloads the packages from the same
+workflow run. It checks their SHA-256 checksums, source archive and Firefox
+manifest, then validates Firefox and submits through `web-ext sign --channel
 unlisted`, and uploads the signed XPI when Mozilla returns it. It does not create
 a public AMO listing or submit Chrome. Signing runs are serialized.
 
