@@ -19,6 +19,7 @@ module.exports = {
     content: path.join(sourcePath, 'Content', 'content.ts'),
     
     popup: path.join(sourcePath, 'Popup', 'popup.tsx'),
+    options: path.join(sourcePath, 'Settings', 'options.tsx'),
     
     
     iframe: path.join(sourcePath, 'Content', 'Iframe', 'iframe.tsx'),
@@ -45,6 +46,13 @@ module.exports = {
   },
   devtool: prod ? undefined : 'source-map',
   plugins: [
+    new HtmlWebpackPlugin({
+      template: path.join(sourcePath, 'Settings', 'options.html'),
+      inject: 'body',
+      chunks: ['options'],
+      hash: true,
+      filename: 'options.html',
+    }),
     new HtmlWebpackPlugin({
       template: path.join(sourcePath, 'Popup', 'popup.html'),
       inject: 'body',

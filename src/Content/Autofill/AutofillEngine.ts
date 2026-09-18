@@ -52,6 +52,7 @@ export interface AutofillSiteRule {
   id: string;
   origins: string[];
   pathPrefixes?: string[];
+  securityAnswers?: Array<{ answerSelector: string; questionSelector: string }>;
   selectors: {
     currentPassword?: string[];
     ignore?: string[];
@@ -146,7 +147,8 @@ export class AutofillEngine {
 
   async inspect(initiator: HTMLInputElement | null = null): Promise<AutofillInspection> {
     const analysis = this.analyse(initiator, false);
-    const securityAnswers = this.isAtlasSecurityPage() ? this.atlasSecurityAnswers(analysis.fields) : null;
+    const securityRule = this.securityAnswerRule(analysis.fields);
+    const securityAnswers = securityRule ? this.configuredSecurityAnswers(analysis.fields, securityRule).answers : null;
     const interactiveInitiator = initiator !== null && this.isInteractive(initiator);
     const structurallyRecognizedUsername = interactiveInitiator && analysis.targets.some(target => target.username?.element === initiator);
     const structurallyRecognizedPassword = interactiveInitiator && analysis.targets.some(target => target.password?.element === initiator);
@@ -197,8 +199,9 @@ export class AutofillEngine {
     const analysis = this.analyse(initiator, request.trigger === 'inline');
     const initiatorSnapshot = analysis.fields.find(field => field.element === initiator);
 
-    if (this.isAtlasSecurityPage()) {
-      return this.fillAtlasSecurityAnswers(request, analysis.fields);
+    const securityRule = this.securityAnswerRule(analysis.fields);
+    if (securityRule) {
+      return this.fillSecurityAnswers(request, analysis.fields, securityRule);
     }
 
     if (initiatorSnapshot && this.isNewPassword(initiatorSnapshot)) {
@@ -373,40 +376,59 @@ export class AutofillEngine {
     });
   }
 
-  private isAtlasSecurityPage(): boolean {
-    const url = new URL(this.document.location.href);
-    return url.origin === 'https://atlasauth.b2clogin.com' &&
-      url.pathname.toLowerCase().startsWith('/f50ebcfb-eadd-41d8-9099-a7049d073f5c/b2c_1a_atoproduction_atlas_susi/') &&
-      this.document.querySelector('#attributeVerification input[id^="kba"][id$="_response"]') !== null;
+  private securityAnswerRule(fields: FieldSnapshot[]): AutofillSiteRule | null {
+    const rule = this.matchingRule();
+    return rule?.securityAnswers?.some(mapping => fields.some(field => this.matchesSelector(field.element, mapping.answerSelector))) ? rule : null;
   }
 
-  private atlasSecurityAnswers(fields: FieldSnapshot[]): Array<{ field: FieldSnapshot; names: string[] }> {
+  private matchesSelector(element: Element, selector: string): boolean {
+    try {
+      return element.matches(selector);
+    } catch {
+      return false;
+    }
+  }
+
+  private configuredSecurityAnswers(fields: FieldSnapshot[], rule: AutofillSiteRule): {
+    answers: Array<{ field: FieldSnapshot; names: string[] }>;
+    expected: number;
+  } {
     const answers: Array<{ field: FieldSnapshot; names: string[] }> = [];
-    for (const field of fields) {
-      const match = /^kba([123])_response$/.exec(field.element.id);
-      if (!match || field.element.type !== 'password' || !this.isEligible(field) || !field.element.closest('#attributeVerification')) {
+    const mappings = rule.securityAnswers ?? [];
+    const targets = fields.filter(field => this.isEligible(field) && ['text', 'password'].includes(field.element.type) &&
+      mappings.some(mapping => this.matchesSelector(field.element, mapping.answerSelector)));
+    for (const field of targets) {
+      const matchedMappings = mappings.filter(mapping => this.matchesSelector(field.element, mapping.answerSelector));
+      if (matchedMappings.length !== 1) {
         continue;
       }
-      const questions = this.document.querySelectorAll<HTMLElement>(`#attributeVerification #kbq${match[1]}ReadOnly, #attributeVerification #kbq${match[1]}aReadOnly, #attributeVerification #kbq${match[1]}bReadOnly`);
+      const mapping = matchedMappings[0];
+      if (fields.filter(candidate => this.matchesSelector(candidate.element, mapping.answerSelector)).length !== 1) continue;
+      let questions: NodeListOf<HTMLElement>;
+      try {
+        questions = this.document.querySelectorAll<HTMLElement>(mapping.questionSelector);
+      } catch {
+        continue;
+      }
       if (questions.length !== 1 || !this.isRendered(questions[0])) {
         continue;
       }
       const question = questions[0].textContent?.trim();
-      if (!question || fields.filter(candidate => candidate.element.id === field.element.id).length !== 1) {
+      if (!question) {
         continue;
       }
-      // IDs pair prompts with inputs, but neither IDs nor display numbers identify a question.
+      // Selectors pair prompts with inputs; the displayed question identifies the saved answer.
       answers.push({ field, names: [this.securityQuestionKey(question)] });
     }
-    return answers;
+    return { answers, expected: targets.length };
   }
 
   private securityQuestionKey(name: string): string {
     return name.normalize('NFKC').trim().replace(/\s+/g, ' ').replace(/[?？*]+$/, '').trim().toLowerCase();
   }
 
-  private fillAtlasSecurityAnswers(request: AutofillRequest, fields: FieldSnapshot[]): AutofillResult {
-    const answers = this.atlasSecurityAnswers(fields);
+  private fillSecurityAnswers(request: AutofillRequest, fields: FieldSnapshot[], rule: AutofillSiteRule): AutofillResult {
+    const { answers, expected } = this.configuredSecurityAnswers(fields, rule);
     if (request.trigger === 'page-load') {
       return { ...this.result('blocked', 0, 0, ['manual-custom-fields-only']), customFieldSatisfied: 0 };
     }
@@ -435,7 +457,6 @@ export class AutofillEngine {
         reasons.push('field-rejected-value');
       }
     }
-    const expected = fields.filter(field => /^kba[123]_response$/.test(field.element.id) && this.isEligible(field)).length;
     if (answers.length < expected) reasons.push('no-eligible-fields');
     const status = customFieldSatisfied > 0 ? customFieldSatisfied === expected ? 'complete' : 'partial' : 'no-target';
     return { ...this.result(status, 0, 0, answers.length ? Array.from(new Set(reasons)) : ['no-eligible-fields']), customFieldSatisfied };

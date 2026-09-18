@@ -1,0 +1,37 @@
+{
+  "version": 1,
+  "rules": [
+    {
+      "id": "atlas-visa",
+      "origins": [
+        "https://atlasauth.b2clogin.com"
+      ],
+      "pathPrefixes": [
+        "/f50ebcfb-eadd-41d8-9099-a7049d073f5c/b2c_1a_atoproduction_atlas_susi/",
+        "/f50ebcfb-eadd-41d8-9099-a7049d073f5c/B2C_1A_atoproduction_Atlas_SUSI/"
+      ],
+      "selectors": {
+        "username": [
+          "#attributeVerification:has(#signInName):has(#password[type=\"password\"]):not(:has(input[type=\"password\"]:not(#password))) #signInName"
+        ],
+        "currentPassword": [
+          "#attributeVerification:has(#signInName):has(#password[type=\"password\"]):not(:has(input[type=\"password\"]:not(#password))) #password[type=\"password\"]"
+        ]
+      },
+      "securityAnswers": [
+        {
+          "answerSelector": "#attributeVerification #kba1_response",
+          "questionSelector": "#attributeVerification #kbq1ReadOnly, #attributeVerification #kbq1aReadOnly, #attributeVerification #kbq1bReadOnly"
+        },
+        {
+          "answerSelector": "#attributeVerification #kba2_response",
+          "questionSelector": "#attributeVerification #kbq2ReadOnly, #attributeVerification #kbq2aReadOnly, #attributeVerification #kbq2bReadOnly"
+        },
+        {
+          "answerSelector": "#attributeVerification #kba3_response",
+          "questionSelector": "#attributeVerification #kbq3ReadOnly, #attributeVerification #kbq3aReadOnly, #attributeVerification #kbq3bReadOnly"
+        }
+      ]
+    }
+  ]
+}

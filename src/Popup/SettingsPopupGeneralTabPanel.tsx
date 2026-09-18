@@ -1,8 +1,7 @@
-import { Box, Checkbox, Divider, FormControl, FormControlLabel, FormGroup, FormLabel, List, ListItem, Typography } from '@mui/material';
+import { Box, Checkbox, FormControl, FormControlLabel, FormGroup, FormLabel, List, ListItem, Typography } from '@mui/material';
 import React, { useEffect, useState } from 'react';
 import SplitButton from './SplitButton';
 import { Settings } from '../Settings/Settings';
-import { FontSize, useCustomStyle } from '../Contexts/CustomStyleContext';
 import { SettingsStore } from '../Settings/SettingsStore';
 import { useTranslation } from 'react-i18next';
 import { getSelectedlanguage, languages, isAutoDetected } from '../Localization/config';
@@ -18,7 +17,6 @@ function SettingsPopupGeneralTabPanel(props: Props) {
   const { value, index } = props;
 
   const [t, i18n] = useTranslation('global');
-  const { fontSize, sizeHandler } = useCustomStyle();
   const [settings, setSettings] = useState<Settings>(new Settings());
   const [selectedLanguage, setSelectedLanguage] = useState(0);
   const [isLanguageAutoDetected, setIsLanguageAutoDetected] = useState(true);
@@ -106,11 +104,11 @@ function SettingsPopupGeneralTabPanel(props: Props) {
 
   return (
     <TabPanel value={value} index={index}>
-      <Box style={{ overflowY: 'auto', height: '350px', overflowWrap: 'anywhere' }}>
-        <List sx={{ width: sizeHandler.getSettingsPopupTabPanelsWidth(), pt: 0 }}>
+      <Box style={{ overflowY: 'auto', height: 'auto', overflowWrap: 'anywhere' }}>
+        <List sx={{ width: '100%', pt: 0 }}>
           <FormGroup>
             <ListItem sx={{ pt: 0 }}>
-              <Box sx={{ width: '350px', textAlign: 'center', p: 0 }}>
+              <Box sx={{ width: '100%', textAlign: 'center', p: 0 }}>
                 <FormControl sx={{ alignItems: 'center' }}>
                   <FormLabel sx={{ pb: 1, pr: 2 }}>{t('settings-popup-component.language')}</FormLabel>
                   <SplitButton
@@ -156,11 +154,11 @@ function SettingsPopupGeneralTabPanel(props: Props) {
           </FormGroup>
         </List>
         {commands.filter(x => x.shortcut).length != 0 && (
-          <Box sx={{ pt: 4, pl: 0.5, position: fontSize !== FontSize.xl ? 'absolute' : '', bottom: 10 }}>
-            <Box sx={{ width: '350px', textAlign: 'left', p: 0 }}>
+          <Box sx={{ pt: 4, pl: 0.5 }}>
+            <Box sx={{ width: '100%', textAlign: 'left', p: 0 }}>
               <Box sx={{ display: 'flex' }}>
                 <Box sx={{ color: 'text.secondary', display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
-                  <KeyboardIcon sx={{ fontSize: sizeHandler.getBottomToolbarIconSize() }} />
+                  <KeyboardIcon sx={{ fontSize: '1.25rem' }} />
                 </Box>
                 <Box sx={{ display: 'flex', alignItems: 'left', cursor: 'pointer' }}>
                   <Typography color="text.secondary" variant="body1" align="left" sx={{ pt: 0, pb: 0, pl: '2px', fontWeight: 'bold' }}>

@@ -28,6 +28,8 @@ function loadTypeScriptModule(relativeUrl) {
   return module.exports;
 }
 
+const atlasRuleDocument = JSON.parse(readFileSync(new URL('../docs/autofill-rules/atlas.json', import.meta.url), 'utf8'));
+
 const atlasSignInUrl = 'https://atlasauth.b2clogin.com/f50ebcfb-eadd-41d8-9099-a7049d073f5c/b2c_1a_atoproduction_atlas_susi/oauth2/v2.0/authorize';
 
 for (const trigger of ['toolbar', 'inline']) {
@@ -35,7 +37,7 @@ for (const trigger of ['toolbar', 'inline']) {
     test(`fills Atlas sign-in with a mislabeled new-password field via ${trigger} at ${url}`, async () => {
       const { AutofillEngine } = loadTypeScriptModule('../src/Content/Autofill/AutofillEngine.ts');
       const { AutofillRuleStore } = loadTypeScriptModule('../src/Content/Autofill/AutofillRuleStore.ts');
-      const rules = await new AutofillRuleStore({ load: async () => null }, () => true).load();
+      const rules = await new AutofillRuleStore({ load: async () => atlasRuleDocument }, () => true).load();
       const dom = new JSDOM(`
         <form id="attributeVerification">
           <label for="signInName">Username*</label>
@@ -75,11 +77,11 @@ for (const url of [
 ]) {
   test(`keeps new-password protection outside the Atlas sign-in path: ${url}`, async () => {
     const { AutofillEngine } = loadTypeScriptModule('../src/Content/Autofill/AutofillEngine.ts');
-    const { bundledAutofillRules } = loadTypeScriptModule('../src/Content/Autofill/AutofillRuleStore.ts');
+    const configuredRules = atlasRuleDocument.rules;
     const dom = new JSDOM('<form id="attributeVerification"><input id="signInName"><input id="password" type="password" autocomplete="new-password"></form>', { url });
     makeInputsVisible(dom.window.document);
     const password = dom.window.document.querySelector('#password');
-    const engine = new AutofillEngine(dom.window.document, bundledAutofillRules);
+    const engine = new AutofillEngine(dom.window.document, configuredRules);
     try {
       for (const trigger of ['toolbar', 'inline']) {
         const result = await engine.fill({ trigger, initiator: trigger === 'inline' ? password : null,
@@ -102,10 +104,10 @@ for (const fields of [
 ]) {
   test(`keeps Atlas new-password protection for a non-login form: ${fields}`, async () => {
     const { AutofillEngine } = loadTypeScriptModule('../src/Content/Autofill/AutofillEngine.ts');
-    const { bundledAutofillRules } = loadTypeScriptModule('../src/Content/Autofill/AutofillRuleStore.ts');
+    const configuredRules = atlasRuleDocument.rules;
     const dom = new JSDOM(`<form id="attributeVerification">${fields}</form>`, { url: atlasSignInUrl });
     makeInputsVisible(dom.window.document);
-    const engine = new AutofillEngine(dom.window.document, bundledAutofillRules);
+    const engine = new AutofillEngine(dom.window.document, configuredRules);
     try {
       for (const trigger of ['toolbar', 'inline']) {
         const result = await engine.fill({

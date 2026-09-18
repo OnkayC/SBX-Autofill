@@ -1,7 +1,6 @@
 import { Alert, Box, Button, Checkbox, FormControlLabel, List, ListItem, Stack, TextField, Typography } from '@mui/material';
 import React, { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useCustomStyle } from '../Contexts/CustomStyleContext';
 import { createBrowserAutofillRuleStore } from '../Content/Autofill/BrowserAutofillRuleStorage';
 import type { StoredAutofillSiteRule } from '../Content/Autofill/AutofillRuleStore';
 
@@ -14,7 +13,6 @@ const ruleStore = createBrowserAutofillRuleStore();
 
 function SettingsPopupRulesTabPanel({ value, index }: Props) {
   const [t] = useTranslation('global');
-  const { sizeHandler } = useCustomStyle();
   const [json, setJson] = useState('');
   const [rules, setRules] = useState<StoredAutofillSiteRule[]>([]);
   const [error, setError] = useState('');
@@ -73,14 +71,15 @@ function SettingsPopupRulesTabPanel({ value, index }: Props) {
       {value === index ? (
         <Box
           sx={{
-            height: '350px',
+            height: 'auto',
             overflowY: 'auto',
             overflowWrap: 'anywhere',
             p: 1
           }}
         >
-          <Stack spacing={1} sx={{ width: sizeHandler.getSettingsPopupTabPanelsWidth() }}>
+          <Stack spacing={1} sx={{ width: '100%' }}>
             <Typography variant="body2">{t('settings-popup-component.rules-description')}</Typography>
+            <Typography variant="body2">{t('settings-popup-component.rules-security-answers')}</Typography>
             {error ? <Alert severity="error">{error}</Alert> : null}
             {saved ? <Alert severity="success">{t('settings-popup-component.rules-saved')}</Alert> : null}
             <TextField
@@ -96,6 +95,18 @@ function SettingsPopupRulesTabPanel({ value, index }: Props) {
               size="small"
             />
             <Stack direction="row" spacing={1}>
+              <Button component="label" variant="outlined">
+                {t('settings-popup-component.rules-load-file')}
+                <input type="file" accept=".json,application/json" hidden onChange={async event => {
+                  const file = event.target.files?.[0];
+                  event.target.value = '';
+                  if (!file) return;
+                  await runRuleOperation(async () => {
+                    if (file.size > 1_000_000) throw new Error('Autofill rule document exceeds the 1 MB limit.');
+                    setJson(await file.text());
+                  });
+                }} />
+              </Button>
               <Button variant="contained" onClick={importRules}>
                 {t('settings-popup-component.rules-import')}
               </Button>

@@ -11,13 +11,12 @@ import '@fontsource/roboto/700.css';
 
 import CurrentTabCredentialsComponent from './CurrentTabCredentials';
 
-import { Snackbar, Alert, Paper, BottomNavigation, BottomNavigationAction, Tooltip, Typography } from '@mui/material';
+import { Snackbar, Alert, Paper, BottomNavigation, BottomNavigationAction, Tooltip } from '@mui/material';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
 import { NativeAppApi } from '../Messaging/NativeAppApi';
 import NotRunningPopupComponent from './NotRunningPopupComponent';
 import { Storage, DomainVerification, Settings } from '@mui/icons-material';
 import DatabasesListPopupComponent from './DatabasesListPopupComponent';
-import SettingsPopupComponent from './SettingsPopupComponent';
 import { useCustomStyle } from '../Contexts/CustomStyleContext';
 import { useTranslation } from 'react-i18next';
 import { Utils } from '../Utils';
@@ -85,6 +84,8 @@ export default function PopupComponent() {
     }
 
     getCurrentStatus().catch(() => {
+      setError(true);
+      setLoading(false);
     });
 
     initScrollbars();
@@ -119,16 +120,12 @@ export default function PopupComponent() {
         <Box>
           {loading ? (
             t('general.loading')
-          ) : selectedTab > Tabs.Credentials ? (
-            selectedTab == Tabs.Databases ? (
+          ) : selectedTab === Tabs.Databases ? (
               error ? (
                 <NotRunningPopupComponent onRefresh={onDismiss} />
               ) : (
                 <DatabasesListPopupComponent showToast={message => showToast(message)} />
               )
-            ) : (
-              <SettingsPopupComponent />
-            )
           ) : (
             <CurrentTabCredentialsComponent initScrollbars={initScrollbars} showToast={message => showToast(message)} />
           )}
@@ -145,13 +142,18 @@ export default function PopupComponent() {
               showLabels
               value={selectedTab}
               onChange={(_event, newValue) => {
-                setSelectedTab(newValue);
+                if (newValue === Tabs.Settings) {
+                  void browser.runtime.openOptionsPage().then(() => window.close()).catch(() => showToast(t('settings-popup-component.open-error')));
+                } else {
+                  setSelectedTab(newValue);
+                }
               }}
             >
               {unlockedCount === 0 || error ? (
                 ''
               ) : (
                 <BottomNavigationAction
+                  value={Tabs.Credentials}
                   label={unlockedCount === 0 ? '' : sizeHandler.getPopupTabTitle(t('current-tab-credentials.title'))}
                   icon={
                     <Tooltip title={sizeHandler.getPopupTabTitle(t('current-tab-credentials.title'), true)} placement="top" arrow>
@@ -161,6 +163,7 @@ export default function PopupComponent() {
                 />
               )}
               <BottomNavigationAction
+                value={Tabs.Databases}
                 label={sizeHandler.getPopupTabTitle(t('databases-list-popup-component.title'))}
                 icon={
                   <Tooltip title={sizeHandler.getPopupTabTitle(t('databases-list-popup-component.title'), true)} placement="top" arrow>
@@ -170,6 +173,7 @@ export default function PopupComponent() {
               />
 
               <BottomNavigationAction
+                value={Tabs.Settings}
                 label={sizeHandler.getPopupTabTitle(t('settings-popup-component.title'))}
                 icon={
                   <Tooltip title={sizeHandler.getPopupTabTitle(t('settings-popup-component.title'), true)} placement="top" arrow>

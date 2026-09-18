@@ -14,24 +14,6 @@ export interface AutofillRuleStorage {
   save(document: AutofillRuleDocumentV1): Promise<void>;
 }
 
-// Require the observed login pair and exclude password-confirmation forms in the same flow.
-const atlasSignInForm = '#attributeVerification:has(#signInName):has(#password[type="password"]):not(:has(input[type="password"]:not(#password)))';
-
-export const bundledAutofillRules: AutofillSiteRule[] = [
-  {
-    id: 'atlas-visa-sign-in',
-    origins: ['https://atlasauth.b2clogin.com'],
-    pathPrefixes: [
-      '/f50ebcfb-eadd-41d8-9099-a7049d073f5c/b2c_1a_atoproduction_atlas_susi/',
-      '/f50ebcfb-eadd-41d8-9099-a7049d073f5c/B2C_1A_atoproduction_Atlas_SUSI/'
-    ],
-    selectors: {
-      username: [`${atlasSignInForm} #signInName`],
-      currentPassword: [`${atlasSignInForm} #password[type="password"]`]
-    }
-  }
-];
-
 const maximumRules = 500;
 const maximumSelectorsPerRole = 20;
 const maximumSelectorLength = 500;
@@ -49,8 +31,7 @@ export class AutofillRuleStore {
 
   async load(): Promise<AutofillSiteRule[]> {
     const stored = this.validateDocument(await this.storage.load(), false);
-    const enabledUserRules = stored.rules.filter(rule => rule.enabled !== false);
-    return [...enabledUserRules, ...bundledAutofillRules];
+    return stored.rules.filter(rule => rule.enabled !== false);
   }
 
   async import(json: string): Promise<AutofillSiteRule[]> {
@@ -156,13 +137,32 @@ export class AutofillRuleStore {
       selectors[role] = validatedSelectors;
     }
 
+    let securityAnswers: StoredAutofillSiteRule['securityAnswers'];
+    if (rule.securityAnswers !== undefined) {
+      if (!Array.isArray(rule.securityAnswers) || rule.securityAnswers.length > maximumSelectorsPerRole) {
+        throw new Error(`Rule ${rule.id} has too many security-answer mappings.`);
+      }
+      securityAnswers = rule.securityAnswers.map(mapping => {
+        if (!mapping || typeof mapping !== 'object') {
+          throw new Error(`Rule ${rule.id} contains an invalid security-answer mapping.`);
+        }
+        for (const selector of [mapping.answerSelector, mapping.questionSelector]) {
+          if (typeof selector !== 'string' || !selector.trim() || selector.length > maximumSelectorLength || !this.selectorIsValid(selector)) {
+            throw new Error(`Rule ${rule.id} contains an invalid security-answer selector.`);
+          }
+        }
+        return { answerSelector: mapping.answerSelector, questionSelector: mapping.questionSelector };
+      });
+    }
+
     const validatedRule = {
       disableHeuristics: rule.disableHeuristics === true,
       enabled: rule.enabled !== false,
       id: rule.id,
       origins: [...rule.origins],
       pathPrefixes: rule.pathPrefixes ? [...rule.pathPrefixes] : undefined,
-      selectors
+      selectors,
+      ...(securityAnswers === undefined ? {} : { securityAnswers })
     };
     ids.add(rule.id);
     return validatedRule;

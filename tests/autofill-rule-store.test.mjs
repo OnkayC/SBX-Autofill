@@ -82,7 +82,7 @@ test('rejects wildcard origins and invalid selectors', async () => {
 });
 
 test('skips corrupted stored rules while retaining valid rules', async () => {
-  const { AutofillRuleStore, bundledAutofillRules } = loadTypeScriptModule('../src/Content/Autofill/AutofillRuleStore.ts');
+  const { AutofillRuleStore } = loadTypeScriptModule('../src/Content/Autofill/AutofillRuleStore.ts');
   const stored = {
     rules: [
       {
@@ -104,6 +104,32 @@ test('skips corrupted stored rules while retaining valid rules', async () => {
 
   assert.deepEqual(
     rules.map(rule => rule.id),
-    ['valid-login', ...bundledAutofillRules.map(rule => rule.id)]
+    ['valid-login']
   );
 });
+
+test('imports, exports, disables and deletes security-answer rules without bundled defaults', async () => {
+  const { AutofillRuleStore } = loadTypeScriptModule('../src/Content/Autofill/AutofillRuleStore.ts');
+  let saved = null;
+  const store = new AutofillRuleStore({ load: async () => saved, save: async value => { saved = value; } }, () => true);
+  assert.deepEqual(await store.load(), []);
+  const example = readFileSync(new URL('../docs/autofill-rules/atlas.json', import.meta.url), 'utf8');
+  await store.import(example);
+  assert.deepEqual((await store.load())[0].securityAnswers, JSON.parse(example).rules[0].securityAnswers);
+  await store.import(await store.export());
+  assert.equal((await store.load())[0].securityAnswers.length, 3);
+  await store.setEnabled('atlas-visa', false);
+  assert.deepEqual(await store.load(), []);
+  await store.remove('atlas-visa');
+  assert.deepEqual(JSON.parse(await store.export()).rules, []);
+});
+
+for (const mapping of [null, {}, { answerSelector: '#a' }, { answerSelector: '', questionSelector: '#q' }, { answerSelector: '#a', questionSelector: '[' }]) {
+  test(`rejects malformed security-answer mapping ${JSON.stringify(mapping)}`, async () => {
+    const { AutofillRuleStore } = loadTypeScriptModule('../src/Content/Autofill/AutofillRuleStore.ts');
+    let saved = false;
+    const store = new AutofillRuleStore({ load: async () => null, save: async () => { saved = true; } }, selector => selector.startsWith('#'));
+    await assert.rejects(store.import(JSON.stringify({ version: 1, rules: [{ id: 'custom', origins: ['https://example.test'], selectors: {}, securityAnswers: [mapping] }] })), /invalid security-answer/);
+    assert.equal(saved, false);
+  });
+}

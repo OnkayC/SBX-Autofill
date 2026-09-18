@@ -15,7 +15,7 @@ function SettingsPopupStyleTabPanel(props: Props) {
   const { value, index } = props;
 
   const [t] = useTranslation('global');
-  const { toggleDarkMode, switchToSystemMode, setFontSize, setSpacing, fontSize } = useCustomStyle();
+  const { toggleDarkMode, switchToSystemMode, setFontSize, setSpacing } = useCustomStyle();
   const [selectedAppearance, setSelectedAppearance] = useState(LightOrDarkAppearance.dark);
   const [selectedFontSize, setSelectedFontSize] = useState(FontSize.medium);
   const [selectedSpacing, setSelectedSpacing] = useState(Spacing.medium);
@@ -73,10 +73,10 @@ function SettingsPopupStyleTabPanel(props: Props) {
   return (
     <TabPanel value={value} index={index}>
       <FormGroup>
-        <List sx={{ width: `${[FontSize.large, FontSize.xl].includes(fontSize) ? '390px' : '290px'}` }}>
+        <List sx={{ width: '100%' }}>
           <FormGroup>
             <ListItem>
-              <Box sx={{ width: '350px', textAlign: 'center', p: 0 }}>
+              <Box sx={{ width: '100%', textAlign: 'center', p: 0 }}>
                 <FormControl sx={{ alignItems: 'center' }}>
                   <FormLabel sx={{ pb: 1 }}>{t('settings-popup-component.appearance')}</FormLabel>
                   <SplitButton
@@ -92,7 +92,7 @@ function SettingsPopupStyleTabPanel(props: Props) {
               </Box>
             </ListItem>
             <ListItem>
-              <Box sx={{ width: '350px', textAlign: 'center', p: 0 }}>
+              <Box sx={{ width: '100%', textAlign: 'center', p: 0 }}>
                 <FormControl sx={{ alignItems: 'center' }}>
                   <FormLabel sx={{ pb: 1 }}>{t('settings-popup-component.font-size')}</FormLabel>
                   <SplitButton
@@ -109,7 +109,7 @@ function SettingsPopupStyleTabPanel(props: Props) {
               </Box>
             </ListItem>
             <ListItem>
-              <Box sx={{ width: '350px', textAlign: 'center', p: 0 }}>
+              <Box sx={{ width: '100%', textAlign: 'center', p: 0 }}>
                 <FormControl sx={{ alignItems: 'center' }}>
                   <FormLabel sx={{ pb: 1 }}>{t('settings-popup-component.spacing')}</FormLabel>
                   <SplitButton

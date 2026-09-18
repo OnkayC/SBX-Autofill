@@ -1,0 +1,9 @@
+node_modules/
+dist/
+web-ext-artifacts/
+.codegraph/
+fnox.toml
+.env
+.env.*
+!.env.example
+.DS_Store

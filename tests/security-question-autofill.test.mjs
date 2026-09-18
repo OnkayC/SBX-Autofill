@@ -14,6 +14,7 @@ function load(relative) {
 }
 
 const url = 'https://atlasauth.b2clogin.com/f50ebcfb-eadd-41d8-9099-a7049d073f5c/B2C_1A_atoproduction_Atlas_SUSI/api/SelfAsserted/confirmed';
+const configuredRules = JSON.parse(readFileSync(new URL('../docs/autofill-rules/atlas.json', import.meta.url), 'utf8')).rules;
 const { AutofillEngine } = load('../src/Content/Autofill/AutofillEngine.ts');
 const { AutofillCoordinator } = load('../src/Background/AutofillCoordinator.ts');
 const credential = {
@@ -39,7 +40,7 @@ function fixture(pageUrl = url) {
     e.getBoundingClientRect = () => ({ width: 240, height: 30, x: 0, y: 0, top: 0, left: 0, bottom: 30, right: 240 });
     e.getClientRects = () => [e.getBoundingClientRect()];
   }
-  const engine = new AutofillEngine(dom.window.document);
+  const engine = new AutofillEngine(dom.window.document, configuredRules);
   return { dom, engine, document: dom.window.document, close: () => { engine.dispose(); dom.window.close(); } };
 }
 
@@ -147,6 +148,56 @@ for (const pageUrl of [url.replace('atlasauth.', 'other.'), url.replace('Atlas_S
       const result = await f.engine.fill({ trigger: 'toolbar', credential });
       assert.notEqual(result.status, 'complete');
       for (const e of f.document.querySelectorAll('input[type=password]')) assert.equal(e.value, '');
+    } finally { f.close(); }
+  });
+}
+
+test('custom origin and selectors work without any site-specific engine behavior', async () => {
+  const f = fixture('https://accounts.example.test/challenge');
+  try {
+    f.document.querySelector('#kba2_response').id = 'answer-food';
+    f.document.querySelector('#kba3_response').id = 'answer-name';
+    f.document.querySelector('#kbq2aReadOnly').id = 'prompt-food';
+    f.document.querySelector('#kbq3ReadOnly').id = 'prompt-name';
+    f.engine.replaceRules([{
+      id: 'custom-challenge', origins: ['https://accounts.example.test'], pathPrefixes: ['/challenge'], selectors: {},
+      securityAnswers: [
+        { answerSelector: '#answer-food', questionSelector: '#prompt-food' },
+        { answerSelector: '#answer-name', questionSelector: '#prompt-name' }
+      ]
+    }]);
+    assert.equal((await f.engine.fill({ trigger: 'toolbar', credential })).customFieldSatisfied, 2);
+    assert.equal(f.document.querySelector('#answer-food').value, 'synthetic-food');
+    assert.equal(f.document.querySelector('#answer-name').value, 'synthetic-name');
+  } finally { f.close(); }
+});
+
+test('removing rules removes both site-specific recognition and custom filling', async () => {
+  const f = fixture();
+  try {
+    f.engine.replaceRules([]);
+    assert.equal((await f.engine.inspect()).candidateCount, 0);
+    await f.engine.fill({ trigger: 'toolbar', credential });
+    for (const input of f.document.querySelectorAll('input[type=password]')) assert.equal(input.value, '');
+  } finally { f.close(); }
+});
+
+for (const [name, mutate] of [
+  ['overlapping mappings', rule => rule.securityAnswers.push({ ...rule.securityAnswers[1] })],
+  ['broad answer selectors', rule => rule.securityAnswers[1].answerSelector = 'input[type=password]'],
+  ['ambiguous prompt selectors', rule => rule.securityAnswers[1].questionSelector = 'p'],
+  ['missing prompt selectors', rule => rule.securityAnswers[1].questionSelector = '#absent']
+]) {
+  test(`skips ${name} without password fallback`, async () => {
+    const f = fixture();
+    try {
+      const rule = structuredClone(configuredRules[0]);
+      mutate(rule);
+      f.engine.replaceRules([rule]);
+      const result = await f.engine.fill({ trigger: 'toolbar', credential });
+      assert.notEqual(result.status, 'complete');
+      assert.equal(f.document.querySelector('#kba2_response').value, '');
+      assert.equal(result.passwordSatisfied, 0);
     } finally { f.close(); }
   });
 }

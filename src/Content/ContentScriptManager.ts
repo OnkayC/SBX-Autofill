@@ -326,6 +326,7 @@ export class ContentScriptManager {
   }
 
   listen = false;
+  private inlineMenuGeneration = 0;
   focusOrBlurListener: EventListener = event => this.onFocusChanged(event);
   addFocusListener() {
     this.listen = true;
@@ -335,6 +336,9 @@ export class ContentScriptManager {
 
   removeFocusListener() {
     this.listen = false;
+    this.clearBlurTimeout();
+    // Invalidate menu lookups that were already awaiting settings or native status.
+    this.inlineMenuGeneration += 1;
     document.removeEventListener('focus', this.focusOrBlurListener, true);
     document.removeEventListener('blur', this.focusOrBlurListener, true);
   }
@@ -356,6 +360,8 @@ export class ContentScriptManager {
 
     this.clearBlurTimeout();
 
+    this.inlineMenuGeneration += 1;
+
     if (event.type === 'blur') {
       this.timeout = setTimeout(() => {
         this.autoShowInlineMenuIfFocusedInputRecognized();
@@ -367,7 +373,11 @@ export class ContentScriptManager {
   }
 
   async autoShowInlineMenuIfFocusedInputRecognized() {
+    const generation = this.inlineMenuGeneration;
     await this.autofillRulesReady;
+    if (!this.listen || generation !== this.inlineMenuGeneration) {
+      return;
+    }
     if (document.activeElement && document.activeElement instanceof HTMLInputElement) {
       const focusedElement = document.activeElement as HTMLInputElement;
 
@@ -377,16 +387,17 @@ export class ContentScriptManager {
       }
 
       const inspection = await this.autofillEngine.inspect(focusedElement);
+      if (!this.listen || generation !== this.inlineMenuGeneration || document.activeElement !== focusedElement) {
+        return;
+      }
       const isRecognizedUsernameField = inspection.focusedRole === 'username';
       const isRecognizedPasswordField = inspection.focusedRole === 'current-password';
 
       if (isRecognizedUsernameField || isRecognizedPasswordField) {
         this.currentInlineMenuInputElement = focusedElement;
 
-        this.showInlineMenuOnInputElement(focusedElement, isRecognizedPasswordField);
-      } else {
+        await this.showInlineMenuOnInputElement(focusedElement, isRecognizedPasswordField, generation);
       }
-    } else {
     }
   }
 
@@ -405,14 +416,14 @@ export class ContentScriptManager {
       const isLikelyPasswordField = inspection.focusedRole === 'current-password' || inspection.focusedRole === 'new-password' || focusedElement.type === 'password';
 
       await this.showInlineMenuOnInputElement(focusedElement, isLikelyPasswordField);
-    } else {
     }
   }
 
-  async showInlineMenuOnInputElement(fieldElement: HTMLInputElement, isPasswordField: boolean) {
-    const status = await this.getStatus();
+  async showInlineMenuOnInputElement(fieldElement: HTMLInputElement, isPasswordField: boolean, generation = this.inlineMenuGeneration) {
+    await this.getStatus();
 
-    if (status == null) {
+    if (generation !== this.inlineMenuGeneration || document.activeElement !== fieldElement) {
+      return;
     }
 
     this.iframeManager.initialize(IframeComponentTypes.InlineMiniFieldMenu, fieldElement, isPasswordField);

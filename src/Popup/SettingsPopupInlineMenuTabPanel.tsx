@@ -1,7 +1,6 @@
 import { Box, Checkbox, FormControlLabel, FormGroup, List, ListItem } from '@mui/material';
 import React, { useEffect, useState } from 'react';
 import { Settings } from '../Settings/Settings';
-import { useCustomStyle } from '../Contexts/CustomStyleContext';
 import { SettingsStore } from '../Settings/SettingsStore';
 import { useTranslation } from 'react-i18next';
 import { BackgroundManager } from '../Background/BackgroundManager';
@@ -16,7 +15,6 @@ function SettingsPopupInlineMenuTabPanel(props: Props) {
   const { value, index } = props;
 
   const [t] = useTranslation('global');
-  const { sizeHandler } = useCustomStyle();
 
   const [settings, setSettings] = useState<Settings>(new Settings());
   const [currentUrl, setCurrentUrl] = useState<string | undefined>('Loading...');
@@ -176,8 +174,8 @@ function SettingsPopupInlineMenuTabPanel(props: Props) {
 
   return (
     <TabPanel value={value} index={index}>
-      <Box style={{ overflowY: 'auto', height: '350px', overflowWrap: 'anywhere' }}>
-        <List sx={{ width: sizeHandler.getSettingsPopupTabPanelsWidth(), pt: 0 }}>
+      <Box style={{ overflowY: 'auto', height: 'auto', overflowWrap: 'anywhere' }}>
+        <List sx={{ width: '100%', pt: 0 }}>
           <FormGroup>
             <ListItem sx={{ p: '2px' }}>
               <FormControlLabel
