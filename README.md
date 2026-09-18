@@ -238,3 +238,36 @@ Translations originate from the separately maintained
 uses the MIT license. Thanks to the upstream code and localization contributors,
 and to the Password Safe, KeePass, and KeePassXC projects on which the wider
 password-manager ecosystem builds.
+
+## Automated release packages
+
+The **Build release packages** GitHub Actions workflow runs manually from the
+Actions tab, on `v*` tag pushes, and for pull requests affecting the build.
+It installs locked dependencies, runs tests, and builds both browsers using Node.js 24.
+Tag builds require `v<version>` to match the package, lockfile and both manifests.
+
+Download the workflow artifact to get a Chrome upload ZIP, an **unsigned Firefox
+ZIP**, the corresponding committed source archive, and SHA-256 checksums. Each
+browser ZIP includes its manifest at the root, license and source archive.
+Artifacts are retained for 30 days. The workflow does not create a GitHub Release,
+submit to either store, or use signing secrets. Firefox still needs Mozilla
+signing before persistent installation in a standard Firefox profile.
+
+### Firefox signing
+
+Push a `v<version>` tag on a commit from `main` to run **Sign Firefox release**
+automatically. The tag must match the package, lockfile and browser manifests.
+You can also run it manually on `main`, supplying the committed version. Use a **new Mozilla
+version**: deleting Git tags does not free previously submitted AMO versions.
+
+The job uses the `firefox-release` GitHub environment, restricted to `main` and `v*` tags, with
+`AMO_JWT_ISSUER` and `AMO_JWT_SECRET` environment secrets. It builds and tests the
+committed source, validates Firefox, submits through `web-ext sign --channel
+unlisted`, and uploads the signed XPI when Mozilla returns it. It does not create
+a public AMO listing or submit Chrome. Signing runs are serialized.
+
+Mozilla approval can outlast the 15-minute signing wait. If signing times out,
+check the existing submission in AMO before running again; a timeout does not
+mean the upload failed. An unsigned/source artifact is retained for diagnosis.
+The XPI checks validate its archive, version, identity and signature-file presence;
+installation in Firefox remains the final signature and behavior check.
