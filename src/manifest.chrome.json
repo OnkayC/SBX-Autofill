@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "Strongbox AutoFill",
+  "name": "SBX Autofill",
   "version": "1.2.10",
   "options_ui": { "page": "options.html", "open_in_tab": true },
   "icons": {
@@ -39,15 +39,15 @@
     }
   },
   "action": {
-    "default_title": "Strongbox",
+    "default_title": "SBX Autofill",
     "default_popup": "popup.html",
     "default_icon": {
       "19": "assets/icons/app-icon-blue-19.png",
       "38": "assets/icons/app-icon-blue-38.png"
     }
   },
-  "description": "Strongbox Browser AutoFill Extension",
-  "short_name": "Strongbox",
+  "description": "Autofill for Strongbox on macOS. Not affiliated with or endorsed by Phoebe Code Limited or Strongbox.",
+  "short_name": "SBX Autofill",
   "permissions": [
     "tabs",
     "nativeMessaging",
@@ -56,7 +56,7 @@
     "favicon"
   ],
   "host_permissions": ["http://*/*", "https://*/*"],
-  "author": "Phoebe Code Limited",
+  "author": "Onkay",
   "minimum_chrome_version": "88",
   "background": {
     "service_worker": "js/background.bundle.js",
@@ -71,5 +71,5 @@
       "css": ["content.css"]
     }
   ],
-  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAmYMg7JC2aNWnTwGhsTmXm1XRR6wUWpJ8OOoqPCdOl+WX827REZ9YZnm0FhzKlGyFFKGNupbPpUPeWS+IlVaGhqHeHRTcbTlDxCEInVsvKWVxg/LWFwAjptgs/X9Q3MU3u8uM9wYBkxPHwwKJA3n4/mCoA6Q4qpj0ZVWZhoZs0j5s7V33ENrvybROq733ShbFk0Cw1Gdv0Zonzt9DVLHaAm1ZDBobMODSu3976I3lzPfGKpYxcT41e309B4fbS7euDyKCvP/McvMFRF/9SX1dyQE5oJoiwaCpFZHvVAPSErKuGHoJWbY9jdCACVD6g6UNKA/PuenuGQ3w9iGoOYPdGQIDAQAB"
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA509geqaF4LrxGoKnoSvDzJ/lWXIKnHgdxtnijcfr+1M0xOc5j1+KtINoX0rD0eTb5mp0acTznfKjkg7GHp7Tb/iBdbLr8+iiedYT1XSiHlNvtA9kmAUujQvzwGacf5go/YFFHLrMQlq91wwzza3c9rewYlSYMPCidVTmRGE0DJ7brL9qfdeF+F9HdjWZfbqE/21d/FLn5YXJe8Ws4s6KiWgL2JUEA3zKTb/2yVnqOIdakXxe0gzSkOEKA6QmPn2inBRTb965Eimua7TNK4CKpupSCQur8IC0RR3/27Ha1WKoLVB7yYiiiu/q7qwSmDi5bzJd16Iy3ouaHOF1wCkWzwIDAQAB"
 }

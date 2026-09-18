@@ -13,7 +13,7 @@ function SettingsPopupComponent() {
     <Box component="main">
       <Typography variant="h4" component="h1">{t('settings-popup-component.title')}</Typography>
       <Typography color="text.secondary" sx={{ mt: 1, mb: 4 }}>
-        Strongbox AutoFill · {t('general.version')} {process.env.VERSION}
+        SBX Autofill · {t('general.version')} {process.env.VERSION}
       </Typography>
       <VerticalTabs />
     </Box>

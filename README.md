@@ -1,5 +1,10 @@
-# Strongbox Browser AutoFill Extension
-Strongbox Browser AutoFill Extension official distributions can be found on the relevant browser stores here:
+# SBX Autofill
+
+SBX Autofill is an independent fork of the open-source Strongbox Browser AutoFill
+extension, maintained by Onkay. It works with Strongbox for macOS and is not
+affiliated with or endorsed by Phoebe Code Limited or Strongbox.
+
+The original Strongbox extension's official distributions are:
 
 - Chrome/Chromium: https://chrome.google.com/webstore/detail/strongbox-autofill/mnilpkfepdibngheginihjpknnopchbn
 - Firefox: https://addons.mozilla.org/firefox/addon/strongbox-autofill/
@@ -37,6 +42,61 @@ chflags nouchg "$HOME/Library/Application Support/Mozilla/NativeMessagingHosts/c
 ```
 
 Strongbox may then manage its official manifest normally, while the fork continues using `com.onkay.strongbox.json`. Restart Firefox after creating or changing either native messaging manifest.
+
+## Onkay Chrome fork (macOS)
+
+Build the Chrome Manifest V3 extension from the repository root:
+
+```sh
+mise exec -- npm run build:chrome
+```
+
+The Chrome build uses the same `com.onkay.strongbox` native host as the Firefox
+fork, but Chrome needs its own registration. Create this file:
+
+```text
+~/Library/Application Support/Google/Chrome/NativeMessagingHosts/com.onkay.strongbox.json
+```
+
+```json
+{
+  "allowed_origins": [
+    "chrome-extension://mmkljcggfeafndhodagadahcijhhmamj/"
+  ],
+  "description": "Strongbox Browser AutoFill Extension - Onkay Fork",
+  "name": "com.onkay.strongbox",
+  "path": "/Applications/Strongbox.app/Contents/MacOS/afproxy",
+  "type": "stdio"
+}
+```
+
+Verify the executable exists at `path`; if Strongbox is installed elsewhere,
+use the executable path from its existing Chrome native-host registration.
+Leave `com.markmcguill.strongbox.json` unchanged.
+
+Open `chrome://extensions`, enable **Developer mode**, choose **Load unpacked**,
+and select this repository's `dist/chrome` directory. The manifest's existing
+public key fixes the extension ID to `mmkljcggfeafndhodagadahcijhhmamj`, the
+fork's separate Chrome Web Store item. Disable the stock extension or an older
+unpacked fork using the stock ID (`mnilpkfepdibngheginihjpknnopchbn`) before
+using this build, to avoid duplicate autofill. Settings do not transfer across
+extension IDs: export custom rules and record preferences before switching,
+then import/configure them in the fork. Keep the old extension disabled until
+you have verified the migration. Firefox settings and rules are also separate.
+
+Verify the displayed version and enabled state, then open the extension's
+**Databases** view to check its Strongbox connection. **Settings** opens a
+standalone tab. After rebuilding, use **Reload** on the extension card and
+refresh pages that need updated content scripts. Keep `dist/chrome` in place:
+this is a local unpacked installation, with updates applied by rebuilding and
+reloading rather than through the Chrome Web Store.
+
+The store item is distributed as **Private**, restricted to the publisher's
+trusted tester accounts. Once Google approves it, eligible accounts can use its
+[direct installation link](https://chromewebstore.google.com/detail/mmkljcggfeafndhodagadahcijhhmamj)
+for store-managed updates. The native-host setup above is still required on
+each Mac. See the [privacy policy](docs/privacy.md) for data handling and Chrome
+Sync details.
 
 ## Configurable site rules (Onkay fork)
 

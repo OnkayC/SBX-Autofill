@@ -1,13 +1,13 @@
 {
   "manifest_version": 2,
-  "name": "Strongbox AutoFill (Onkay Fork)",
+  "name": "SBX Autofill",
   "version": "1.2.10",
   "options_ui": { "page": "options.html", "open_in_tab": true },
   "icons": {
     "128": "assets/icons/app-icon-blue-128.png"
   },
-  "description": "Private personal fork of the open-source Strongbox AutoFill extension. Not affiliated with or endorsed by Phoebe Code Limited.",
-  "short_name": "Strongbox Onkay",
+  "description": "Autofill for Strongbox on macOS. Not affiliated with or endorsed by Phoebe Code Limited or Strongbox.",
+  "short_name": "SBX Autofill",
   "permissions": [
     "tabs",
     "nativeMessaging",
@@ -33,7 +33,7 @@
     "default_icon": {
       "128": "assets/icons/app-icon-blue-128.png"
     },
-    "default_title": "Strongbox Onkay",
+    "default_title": "SBX Autofill",
     "default_popup": "popup.html"
   },
   "web_accessible_resources": ["assets/icons/app-icon-circle.png"],
